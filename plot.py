@@ -246,6 +246,7 @@ app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.DARKLY, dbc.icons.BOOTSTRAP],
 )
+server = app.server   # ✅ define server ONCE here
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -277,22 +278,10 @@ sidebar = dbc.Card(
                 dbc.RadioItems(
                     id="objective-radio",
                     options=[
-                        {
-                            "label": "1. Customer Segmentation",
-                            "value": "obj1",
-                        },
-                        {
-                            "label": "2. Product Bundling",
-                            "value": "obj2",
-                        },
-                        {
-                            "label": "3. Sales Trends",
-                            "value": "obj3",
-                        },
-                        {
-                            "label": "4. Revenue Optimization",
-                            "value": "obj4",
-                        },
+                        {"label": "1. Customer Segmentation", "value": "obj1"},
+                        {"label": "2. Product Bundling", "value": "obj2"},
+                        {"label": "3. Sales Trends", "value": "obj3"},
+                        {"label": "4. Revenue Optimization", "value": "obj4"},
                     ],
                     value="obj1",
                     className="mb-4",
@@ -442,7 +431,6 @@ section_obj4 = dbc.Card(
         ),
         dbc.CardBody(
             [
-                # 🌍 Global map
                 html.H6("Global Revenue Map"),
                 html.P(
                     "Darker countries indicate higher total revenue. Hover to see exact values.",
@@ -450,8 +438,6 @@ section_obj4 = dbc.Card(
                 ),
                 dcc.Graph(figure=fig_world),
                 html.Hr(),
-
-                # Distribution + Top Customers
                 dbc.Row(
                     [
                         dbc.Col(
@@ -472,8 +458,6 @@ section_obj4 = dbc.Card(
                     className="gy-4",
                 ),
                 html.Hr(),
-
-                # Countries vs Regions
                 dbc.Row(
                     [
                         dbc.Col(
@@ -494,8 +478,6 @@ section_obj4 = dbc.Card(
                     className="gy-4",
                 ),
                 html.Hr(),
-
-                # Products
                 html.H6("Top 20 Products by Revenue", className="mt-2"),
                 dcc.Graph(figure=fig_products),
             ]
@@ -573,15 +555,9 @@ def update_rfm_plots(selected_segments):
 
     return build_pca_fig(filtered), build_3d_fig(filtered)
 
-app = dash.Dash(
-    __name__,
-    external_stylesheets=[dbc.themes.DARKLY, dbc.icons.BOOTSTRAP],
-)
-
-server = app.server  # this line is important
 
 # =========================================================
-# 6. RUN
+# 6. RUN (local only)
 # =========================================================
 if __name__ == "__main__":
     app.run(debug=True)

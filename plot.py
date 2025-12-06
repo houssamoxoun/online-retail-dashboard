@@ -6,7 +6,6 @@ import pandas as pd
 
 # =========================================================
 # 1. LOAD DATA
-# (adapt CSV filenames/paths if yours are different)
 # =========================================================
 df_rfm = pd.read_csv("rfm.csv")
 
@@ -29,18 +28,14 @@ df_products = pd.read_csv("top_products_by_revenue.csv")
 # =========================================================
 # 2. PRE-PROCESSING
 # =========================================================
-# Segments for filter
 segments = sorted(df_rfm["Segment"].dropna().unique().tolist())
 
-# Daily index
 if "Day" not in df_daily.columns:
     df_daily["Day"] = df_daily.index
 
-# Monthly label
 if "Month" not in df_monthly.columns:
     df_monthly["Month"] = [f"M{i+1}" for i in range(len(df_monthly))]
 
-# Top 3 categories by revenue
 month_cols = [c for c in df_cat_monthly.columns if c != "Description"]
 df_cat_monthly["Total"] = df_cat_monthly[month_cols].sum(axis=1)
 top3_cats = df_cat_monthly.nlargest(3, "Total")["Description"].tolist()
@@ -52,15 +47,12 @@ df_top3_melt = df_top3.melt(
     value_name="Sales",
 )
 
-# Weekday pattern
 df_weekday = df_weekday.sort_values("Hour")
 
-# Slow movers flag
 df_product_stats["Status"] = df_product_stats["DaysSinceLastSale"].apply(
     lambda x: "Slow Mover" if x > 90 else "Active"
 )
 
-# Top 10 customers
 top10_cust = df_cust.nlargest(10, "TotalRevenue").copy()
 top10_cust["CustomerID"] = top10_cust["CustomerID"].astype(str)
 
@@ -98,7 +90,7 @@ def build_3d_fig(df):
     return fig
 
 
-# Product Pairs
+# ---------- Objective 2 ----------
 fig_pairs = px.bar(
     df_pairs,
     x="Frequency",
@@ -112,7 +104,7 @@ fig_pairs = px.bar(
 )
 fig_pairs.update_layout(yaxis={"categoryorder": "total ascending"})
 
-# Sales trends
+# ---------- Objective 3 ----------
 fig_daily = px.line(
     df_daily,
     x="Day",
@@ -141,7 +133,6 @@ fig_cat = px.line(
     markers=True,
 )
 
-# Weekday heatmap
 fig_heatmap = px.imshow(
     df_weekday.set_index("Hour").T,
     labels=dict(x="Hour of Day", y="Day of Week", color="Sales"),
@@ -150,7 +141,6 @@ fig_heatmap = px.imshow(
     color_continuous_scale="Viridis",
 )
 
-# Slow movers
 fig_slow = px.scatter(
     df_product_stats,
     x="DaysSinceLastSale",
@@ -161,7 +151,7 @@ fig_slow = px.scatter(
     template=PLOT_TEMPLATE,
 )
 
-# Revenue distribution
+# ---------- Objective 4 ----------
 fig_dist = px.histogram(
     df_cust,
     x="TotalRevenue",
@@ -171,7 +161,6 @@ fig_dist = px.histogram(
     log_y=True,
 )
 
-# Top customers
 fig_top_cust = px.bar(
     top10_cust,
     x="CustomerID",
@@ -182,7 +171,6 @@ fig_top_cust = px.bar(
     color_continuous_scale="Viridis",
 )
 
-# Countries
 fig_country = px.bar(
     df_country.sort_values("OrderValue", ascending=False).head(10),
     x="OrderValue",
@@ -194,7 +182,6 @@ fig_country = px.bar(
 )
 fig_country.update_layout(yaxis={"categoryorder": "total ascending"})
 
-# Regions
 fig_region = px.pie(
     df_region,
     names="Region",
@@ -204,10 +191,9 @@ fig_region = px.pie(
     hole=0.45,
 )
 
-# 🌍 World map
 fig_world = px.choropleth(
     df_country,
-    locations="Country",             # must be full country names
+    locations="Country",
     locationmode="country names",
     color="OrderValue",
     hover_name="Country",
@@ -223,7 +209,6 @@ fig_world.update_geos(
 )
 fig_world.update_layout(margin=dict(l=0, r=0, t=50, b=0))
 
-# Top products
 fig_products = px.bar(
     df_products.sort_values("TotalRevenue", ascending=True),
     x="TotalRevenue",
@@ -235,18 +220,37 @@ fig_products = px.bar(
     color_continuous_scale="Teal",
 )
 
-# RFM defaults
+# ---------- Fix heights for Obj 3 & 4 ----------
+FIG_HEIGHT = 380  # change if you want taller/shorter charts
+
+for fig in [
+    fig_daily,
+    fig_monthly,
+    fig_cat,
+    fig_heatmap,
+    fig_slow,
+    fig_dist,
+    fig_top_cust,
+    fig_country,
+    fig_region,
+    fig_products,
+]:
+    fig.update_layout(height=FIG_HEIGHT)
+
+fig_world.update_layout(height=450)  # map a bit taller
+
+# ---------- RFM defaults ----------
 fig_pca_default = build_pca_fig(df_rfm)
 fig_3d_default = build_3d_fig(df_rfm)
 
 # =========================================================
-# 4. DASH APP – FANCY LAYOUT
+# 4. DASH APP – LAYOUT
 # =========================================================
 app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.DARKLY, dbc.icons.BOOTSTRAP],
 )
-server = app.server   # ✅ define server ONCE here
+server = app.server
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -311,7 +315,6 @@ sidebar = dbc.Card(
     className="shadow-lg",
 )
 
-# ------------- Content Sections -------------
 section_obj1 = dbc.Card(
     [
         dbc.CardHeader(
@@ -470,7 +473,7 @@ section_obj4 = dbc.Card(
                         dbc.Col(
                             [
                                 html.H6("Revenue Share by Region"),
-                                dcc.Graph(figure=fig_region),
+                            dcc.Graph(figure=fig_region),
                             ],
                             md=6,
                         ),
@@ -494,17 +497,15 @@ content = dbc.Container(
             [
                 dbc.Col(sidebar, md=3),
                 dbc.Col(
-                    [
-                        html.Div(
-                            id="content-wrapper",
-                            children=[
-                                section_obj1,
-                                section_obj2,
-                                section_obj3,
-                                section_obj4,
-                            ],
-                        ),
-                    ],
+                    html.Div(
+                        id="content-wrapper",
+                        children=[
+                            section_obj1,
+                            section_obj2,
+                            section_obj3,
+                            section_obj4,
+                        ],
+                    ),
                     md=9,
                 ),
             ],
@@ -519,7 +520,6 @@ app.layout = html.Div([navbar, content])
 # =========================================================
 # 5. CALLBACKS
 # =========================================================
-
 @app.callback(
     Output("section-obj1", "style"),
     Output("section-obj2", "style"),
@@ -536,7 +536,6 @@ def toggle_sections(selected_obj):
     style2 = show_block if selected_obj == "obj2" else hide
     style3 = show_block if selected_obj == "obj3" else hide
     style4 = show_block if selected_obj == "obj4" else hide
-
     seg_style = show_block if selected_obj == "obj1" else hide
 
     return style1, style2, style3, style4, seg_style
@@ -552,12 +551,11 @@ def update_rfm_plots(selected_segments):
         filtered = df_rfm
     else:
         filtered = df_rfm[df_rfm["Segment"].isin(selected_segments)]
-
     return build_pca_fig(filtered), build_3d_fig(filtered)
 
 
 # =========================================================
-# 6. RUN (local only)
+# 6. RUN (LOCAL ONLY)
 # =========================================================
 if __name__ == "__main__":
     app.run(debug=True)

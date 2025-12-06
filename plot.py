@@ -30,12 +30,31 @@ df_products = pd.read_csv("top_products_by_revenue.csv")
 # =========================================================
 segments = sorted(df_rfm["Segment"].dropna().unique().tolist())
 
+# Daily label
 if "Day" not in df_daily.columns:
     df_daily["Day"] = df_daily.index
 
-if "Month" not in df_monthly.columns:
-    df_monthly["Month"] = [f"M{i+1}" for i in range(len(df_monthly))]
+# Month labels with real month names for monthly trend
+month_map = {
+    1: "January", 2: "February", 3: "March", 4: "April",
+    5: "May", 6: "June", 7: "July", 8: "August",
+    9: "September", 10: "October", 11: "November", 12: "December",
+}
 
+if "Month" in df_monthly.columns:
+    # If Month is numeric, map to names
+    try:
+        df_monthly["MonthLabel"] = df_monthly["Month"].astype(int).map(month_map)
+    except ValueError:
+        # If Month already text ("January"...), keep it
+        df_monthly["MonthLabel"] = df_monthly["Month"].astype(str)
+else:
+    # No Month column: assume months in order
+    df_monthly["MonthLabel"] = [
+        month_map.get(i + 1, f"M{i+1}") for i in range(len(df_monthly))
+    ]
+
+# Category monthly
 month_cols = [c for c in df_cat_monthly.columns if c != "Description"]
 df_cat_monthly["Total"] = df_cat_monthly[month_cols].sum(axis=1)
 top3_cats = df_cat_monthly.nlargest(3, "Total")["Description"].tolist()
@@ -47,16 +66,19 @@ df_top3_melt = df_top3.melt(
     value_name="Sales",
 )
 
+# Weekday order
 df_weekday = df_weekday.sort_values("Hour")
 
+# Slow movers flag
 df_product_stats["Status"] = df_product_stats["DaysSinceLastSale"].apply(
     lambda x: "Slow Mover" if x > 90 else "Active"
 )
 
+# Top 10 customers
 top10_cust = df_cust.nlargest(10, "TotalRevenue").copy()
 top10_cust["CustomerID"] = top10_cust["CustomerID"].astype(str)
 
-# Top 20 products df for treemap
+# Top 20 products for treemap
 top20_products = df_products.nlargest(20, "TotalRevenue").copy()
 
 # Co-purchase matrix for heatmap
@@ -137,7 +159,7 @@ fig_daily = px.line(
 
 fig_monthly = px.line(
     df_monthly,
-    x="Month",
+    x="MonthLabel",          # ✅ real month names
     y="OrderValue",
     title="Monthly Sales Trend",
     template=PLOT_TEMPLATE,

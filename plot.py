@@ -57,7 +57,7 @@ top10_cust = df_cust.nlargest(10, "TotalRevenue").copy()
 top10_cust["CustomerID"] = top10_cust["CustomerID"].astype(str)
 
 # =========================================================
-# 3. FIGURE BUILDERS (DARK THEME)
+# 3. FIGURES (DARK THEME)
 # =========================================================
 PLOT_TEMPLATE = "plotly_dark"
 
@@ -220,25 +220,6 @@ fig_products = px.bar(
     color_continuous_scale="Teal",
 )
 
-# ---------- Fix heights for Obj 3 & 4 ----------
-FIG_HEIGHT = 380  # change if you want taller/shorter charts
-
-for fig in [
-    fig_daily,
-    fig_monthly,
-    fig_cat,
-    fig_heatmap,
-    fig_slow,
-    fig_dist,
-    fig_top_cust,
-    fig_country,
-    fig_region,
-    fig_products,
-]:
-    fig.update_layout(height=FIG_HEIGHT)
-
-fig_world.update_layout(height=450)  # map a bit taller
-
 # ---------- RFM defaults ----------
 fig_pca_default = build_pca_fig(df_rfm)
 fig_3d_default = build_3d_fig(df_rfm)
@@ -374,6 +355,7 @@ section_obj2 = dbc.Card(
     style={"display": "none"},
 )
 
+# --------- Objective 3 with fixed heights ----------
 section_obj3 = dbc.Card(
     [
         dbc.CardHeader(
@@ -389,14 +371,20 @@ section_obj3 = dbc.Card(
                         dbc.Col(
                             [
                                 html.H6("Daily Sales"),
-                                dcc.Graph(figure=fig_daily),
+                                dcc.Graph(
+                                    figure=fig_daily,
+                                    style={"height": "380px"},
+                                ),
                             ],
                             md=6,
                         ),
                         dbc.Col(
                             [
                                 html.H6("Monthly Sales"),
-                                dcc.Graph(figure=fig_monthly),
+                                dcc.Graph(
+                                    figure=fig_monthly,
+                                    style={"height": "380px"},
+                                ),
                             ],
                             md=6,
                         ),
@@ -405,17 +393,17 @@ section_obj3 = dbc.Card(
                 ),
                 html.Hr(),
                 html.H6("Monthly Revenue by Top 3 Categories", className="mt-2"),
-                dcc.Graph(figure=fig_cat),
+                dcc.Graph(figure=fig_cat, style={"height": "380px"}),
                 html.Hr(),
                 html.H6("Weekday Sales Pattern"),
-                dcc.Graph(figure=fig_heatmap),
+                dcc.Graph(figure=fig_heatmap, style={"height": "380px"}),
                 html.Hr(),
                 html.H6("Slow-Moving Items"),
                 html.P(
                     "Products with very high days since last sale are candidates for markdowns or removal.",
                     className="text-muted",
                 ),
-                dcc.Graph(figure=fig_slow),
+                dcc.Graph(figure=fig_slow, style={"height": "380px"}),
             ]
         ),
     ],
@@ -424,6 +412,7 @@ section_obj3 = dbc.Card(
     style={"display": "none"},
 )
 
+# --------- Objective 4 with fixed heights ----------
 section_obj4 = dbc.Card(
     [
         dbc.CardHeader(
@@ -439,21 +428,21 @@ section_obj4 = dbc.Card(
                     "Darker countries indicate higher total revenue. Hover to see exact values.",
                     className="text-muted",
                 ),
-                dcc.Graph(figure=fig_world),
+                dcc.Graph(figure=fig_world, style={"height": "450px"}),
                 html.Hr(),
                 dbc.Row(
                     [
                         dbc.Col(
                             [
                                 html.H6("Customer Monetary Distribution"),
-                                dcc.Graph(figure=fig_dist),
+                                dcc.Graph(figure=fig_dist, style={"height": "380px"}),
                             ],
                             md=6,
                         ),
                         dbc.Col(
                             [
                                 html.H6("Top 10 Customers by Revenue"),
-                                dcc.Graph(figure=fig_top_cust),
+                                dcc.Graph(figure=fig_top_cust, style={"height": "380px"}),
                             ],
                             md=6,
                         ),
@@ -466,14 +455,14 @@ section_obj4 = dbc.Card(
                         dbc.Col(
                             [
                                 html.H6("Top Countries by Revenue"),
-                                dcc.Graph(figure=fig_country),
+                                dcc.Graph(figure=fig_country, style={"height": "380px"}),
                             ],
                             md=6,
                         ),
                         dbc.Col(
                             [
                                 html.H6("Revenue Share by Region"),
-                            dcc.Graph(figure=fig_region),
+                                dcc.Graph(figure=fig_region, style={"height": "380px"}),
                             ],
                             md=6,
                         ),
@@ -482,7 +471,7 @@ section_obj4 = dbc.Card(
                 ),
                 html.Hr(),
                 html.H6("Top 20 Products by Revenue", className="mt-2"),
-                dcc.Graph(figure=fig_products),
+                dcc.Graph(figure=fig_products, style={"height": "380px"}),
             ]
         ),
     ],

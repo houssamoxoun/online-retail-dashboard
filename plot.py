@@ -56,6 +56,17 @@ df_product_stats["Status"] = df_product_stats["DaysSinceLastSale"].apply(
 top10_cust = df_cust.nlargest(10, "TotalRevenue").copy()
 top10_cust["CustomerID"] = top10_cust["CustomerID"].astype(str)
 
+# Top 20 products df for treemap
+top20_products = df_products.nlargest(20, "TotalRevenue").copy()
+
+# Co-purchase matrix for heatmap
+pairs_matrix = df_pairs.pivot_table(
+    index="ProductA_desc",
+    columns="ProductB_desc",
+    values="Frequency",
+    fill_value=0,
+)
+
 # =========================================================
 # 3. FIGURES (DARK THEME)
 # =========================================================
@@ -103,6 +114,16 @@ fig_pairs = px.bar(
     color_continuous_scale="Viridis",
 )
 fig_pairs.update_layout(yaxis={"categoryorder": "total ascending"})
+
+fig_pairs_heatmap = px.imshow(
+    pairs_matrix,
+    labels=dict(x="Product B", y="Product A", color="Frequency"),
+    x=pairs_matrix.columns,
+    y=pairs_matrix.index,
+    title="Co-Purchase Frequency Heatmap",
+    template=PLOT_TEMPLATE,
+    color_continuous_scale="Viridis",
+)
 
 # ---------- Objective 3 ----------
 fig_daily = px.line(
@@ -214,11 +235,22 @@ fig_products = px.bar(
     x="TotalRevenue",
     y="Description",
     orientation="h",
-    title="Top 20 Products by Revenue",
+    title="Top 20 Products by Revenue (Bar)",
     template=PLOT_TEMPLATE,
     color="TotalRevenue",
     color_continuous_scale="Teal",
 )
+
+fig_products_treemap = px.treemap(
+    top20_products,
+    path=["Description"],
+    values="TotalRevenue",
+    color="TotalRevenue",
+    color_continuous_scale="Blues",
+    title="Revenue Share by Top 20 Products (Treemap)",
+    template=PLOT_TEMPLATE,
+)
+fig_products_treemap.update_layout(margin=dict(l=0, r=0, t=40, b=0))
 
 # ---------- RFM defaults ----------
 fig_pca_default = build_pca_fig(df_rfm)
@@ -343,10 +375,13 @@ section_obj2 = dbc.Card(
         dbc.CardBody(
             [
                 html.P(
-                    "Top co-purchased product pairs – ideal candidates for bundles or recommendations.",
+                    "Top co-purchased product pairs – ideal for bundle design and recommendations.",
                     className="text-muted",
                 ),
-                dcc.Graph(figure=fig_pairs),
+                dcc.Graph(figure=fig_pairs, style={"height": "420px"}),
+                html.Hr(),
+                html.H6("Co-Purchase Frequency Heatmap"),
+                dcc.Graph(figure=fig_pairs_heatmap, style={"height": "500px"}),
             ]
         ),
     ],
@@ -355,7 +390,6 @@ section_obj2 = dbc.Card(
     style={"display": "none"},
 )
 
-# --------- Objective 3 with fixed heights ----------
 section_obj3 = dbc.Card(
     [
         dbc.CardHeader(
@@ -412,7 +446,6 @@ section_obj3 = dbc.Card(
     style={"display": "none"},
 )
 
-# --------- Objective 4 with fixed heights ----------
 section_obj4 = dbc.Card(
     [
         dbc.CardHeader(
@@ -470,8 +503,11 @@ section_obj4 = dbc.Card(
                     className="gy-4",
                 ),
                 html.Hr(),
-                html.H6("Top 20 Products by Revenue", className="mt-2"),
+                html.H6("Top 20 Products by Revenue (Bar)", className="mt-2"),
                 dcc.Graph(figure=fig_products, style={"height": "380px"}),
+                html.Hr(),
+                html.H6("Top 20 Products by Revenue (Treemap)", className="mt-2"),
+                dcc.Graph(figure=fig_products_treemap, style={"height": "500px"}),
             ]
         ),
     ],
